@@ -1,0 +1,48 @@
+{
+  "info": {
+    "name": "Taller API Vehículos - Flask MongoDB Redis",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:5000"},
+    {"key": "vehicleId", "value": ""}
+  ],
+  "item": [
+    {
+      "name": "Crear vehículo cacheable (15 s)",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"nombre\": \"Auto\",\n  \"categoria\": \"Terrestre (motorizado)\",\n  \"peso_toneladas\": 1.5,\n  \"descripcion\": \"Uso urbano\"\n}"},
+        "url": "{{baseUrl}}/vehiculos"
+      },
+      "event": [{"listen": "test", "script": {"exec": ["pm.collectionVariables.set('vehicleId', pm.response.json().id);"]}}]
+    },
+    {
+      "name": "Consultar vehículo - MongoDB y luego Redis",
+      "request": {"method": "GET", "url": "{{baseUrl}}/vehiculos/{{vehicleId}}"}
+    },
+    {
+      "name": "Actualizar vehículo e invalidar caché",
+      "request": {
+        "method": "PUT",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"descripcion\": \"Uso actualizado\"\n}"},
+        "url": "{{baseUrl}}/vehiculos/{{vehicleId}}"
+      }
+    },
+    {
+      "name": "Eliminar vehículo e invalidar caché",
+      "request": {"method": "DELETE", "url": "{{baseUrl}}/vehiculos/{{vehicleId}}"}
+    },
+    {
+      "name": "Crear vehículo sin caché por descripción larga",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"nombre\": \"SinCache\",\n  \"categoria\": \"Terrestre\",\n  \"peso_toneladas\": 1,\n  \"descripcion\": \"Descripción superior a veinte caracteres\"\n}"},
+        "url": "{{baseUrl}}/vehiculos"
+      }
+    }
+  ]
+}
