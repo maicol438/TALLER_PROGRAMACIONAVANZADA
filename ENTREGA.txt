@@ -1,80 +1,63 @@
 ========================================================================
-ENTREGA DEL TALLER — API REST DE VEHÍCULOS (Flask + MongoDB + Redis)
+ENTREGA — API REST DE VEHÍCULOS (Flask + MongoDB + Redis)
 ========================================================================
 
-TÍTULO DEL TRABAJO:
-  API REST de vehículos con persistencia en MongoDB y caché en Redis.
+1. CÓMO FUNCIONA EL CÓDIGO
+------------------------------------------------------------------------
+  Es una API REST en Flask que administra un catálogo de vehículos.
 
-INTEGRANTES DEL GRUPO:
-  - Nombre: <NOMBRE 1>   Correo: <CORREO 1>
-  - Nombre: <NOMBRE 2>   Correo: <CORREO 2>
-  - Nombre: <NOMBRE 3>   Correo: <CORREO 3>
-  (agregar/eliminar líneas según el número de integrantes)
+  - app.py: define la aplicación y los endpoints.
+      GET    /salud            -> estado del servicio
+      GET    /vehiculos        -> lista todos los vehículos
+      POST   /vehiculos        -> crea un vehículo
+      GET    /vehiculos/<id>   -> consulta un vehículo
+      PUT    /vehiculos/<id>   -> actualiza un vehículo
+      DELETE /vehiculos/<id>   -> elimina un vehículo
 
-DOCENTE:       <NOMBRE DEL DOCENTE>
-ASIGNATURA:    <NOMBRE DE LA ASIGNATURA>
-FECHA:         <DD/MM/AAAA>
+  - MongoDB guarda los vehículos (base de datos "automoviles", colección
+    "vehiculos"). El nombre es único (sin distinguir mayúsculas).
 
-------------------------------------------------------------------------
-1. ENLACES DE ENTREGA
-------------------------------------------------------------------------
-  Repositorio GitHub:  <URL DEL REPOSITORIO>
-  Video en YouTube:    <URL DEL VIDEO>
-  Colección Postman:   postman/Taller_API_Vehiculos.postman_collection.json
+  - Redis cachea las lecturas individuales. La primera consulta a
+    GET /vehiculos/<id> lee de MongoDB y guarda en Redis; las siguientes
+    (dentro del TTL) leen de Redis ("fuente": "redis").
 
-------------------------------------------------------------------------
-2. DESCRIPCIÓN
-------------------------------------------------------------------------
-  API REST que administra un catálogo de vehículos. Los datos se guardan en
-  MongoDB y las lecturas individuales se cachean en Redis aplicando una
-  política de expiración (TTL) según el nombre y la descripción del vehículo.
+  - cache_policy.py define el tiempo de expiración (TTL):
+      * descripción con más de 20 caracteres -> no se cachea
+      * nombre de hasta 5 caracteres         -> 15 segundos
+      * nombre de hasta 10 caracteres        -> 20 segundos
+      * nombre de más de 10 caracteres       -> 40 segundos
 
-  Tecnologías: Python 3.12, Flask 3.1, MongoDB 8.0, Redis 7.4, Docker Compose.
+  - seed_data.py contiene 10 vehículos de ejemplo para cargar con el comando
+    de seed.
 
+2. DEPENDENCIAS
 ------------------------------------------------------------------------
-3. ENDPOINTS
-------------------------------------------------------------------------
-  GET    /salud              -> Estado del servicio
-  GET    /vehiculos          -> Lista todos los vehículos
-  POST   /vehiculos          -> Crea un vehículo (201)
-  GET    /vehiculos/<id>     -> Consulta un vehículo (MongoDB o Redis)
-  PUT    /vehiculos/<id>     -> Actualiza parcialmente e invalida caché
-  DELETE /vehiculos/<id>     -> Elimina e invalida caché (204)
+  Servicios (vía Docker Compose):
+    - MongoDB 8.0
+    - Redis 7.4
 
-------------------------------------------------------------------------
-4. POLÍTICA DE CACHÉ
-------------------------------------------------------------------------
-  - Descripción > 20 caracteres  -> NO se cachea.
-  - Nombre <= 5 caracteres       -> TTL 15 s.
-  - Nombre <= 10 caracteres      -> TTL 20 s.
-  - Nombre > 10 caracteres       -> TTL 40 s.
+  Librerías Python (requirements.txt):
+    - Flask 3.1.0
+    - pymongo 4.10.1
+    - redis 5.2.1
+    - python-dotenv 1.0.1
+    - pytest 8.3.4
+    - mongomock 4.3.0
+    - fakeredis 2.26.2
 
-------------------------------------------------------------------------
-5. CÓMO EJECUTAR (Windows / Docker Desktop)
+  Requisito del sistema: Docker Desktop en ejecución.
+
+3. COMANDOS PARA INICIALIZAR
 ------------------------------------------------------------------------
   cd "<RUTA DEL PROYECTO>"
   docker compose up --build -d
   docker compose exec api flask --app app seed
 
-  Pruebas automatizadas:
+  La API queda disponible en: http://localhost:5000
+
+  Ejecutar las pruebas:
   docker compose exec api pytest -q
 
-------------------------------------------------------------------------
-6. EVIDENCIA DE FUNCIONAMIENTO
-------------------------------------------------------------------------
-  a) Servicios arriba:
-     docker compose ps
-
-  b) Pruebas:
-     7 passed in ... (tests/test_api.py, tests/test_cache_policy.py)
-
-  c) Caché:
-     - 1ª consulta a GET /vehiculos/<id> -> "fuente": "mongodb" (cache_ttl_segundos: 15)
-     - 2ª consulta                       -> "fuente": "redis"
-     - Tras 16 s                         -> "fuente": "mongodb" (expiración)
-
-------------------------------------------------------------------------
-7. OBSERVACIONES
-------------------------------------------------------------------------
-  <ESPACIO PARA NOTAS DEL GRUPO>
+  Detener los servicios:
+  docker compose down
 ========================================================================
